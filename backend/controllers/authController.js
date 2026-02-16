@@ -8,7 +8,12 @@ const jwt = require('jsonwebtoken');
 //@access Public
 const registerUser = async (req, res) => {
     try{
-        const {firstName, lastName, email, password, role, organizerName, category, description } = req.body;
+        const {firstName, lastName, email, password } = req.body;
+
+        const role = 'participant';
+
+        const iiitEmailRegex = /^[a-zA-Z0-9._%+-]+@(students\.)?iiit\.ac\.in$/;
+        const isIIIT = iiitEmailRegex.test(email);
 
         const userExists = await User.findOne({email});
         if(userExists) {
@@ -18,23 +23,14 @@ const registerUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const userData = {
+        const user = await User.create({
+            firstName,
+            lastName,
             email,
             password: hashedPassword,
-            role: role || 'participant'
-        };
-
-        if(userData.role === 'participant') {
-            userData.firstName = firstName;
-            userData.lastName = lastName;
-        }
-        else if(userData.role === 'organizer') {
-            userData.organizerName = organizerName;
-            userData.category = category;
-            userData.description = description; 
-        }
-
-        const user = await User.create(userData);
+            role,
+            participantType: isIIIT ? 'IIIT' : 'Non-IIIT'
+        });
 
         if(user)
         {
@@ -77,7 +73,7 @@ const loginUser = async(req,res) => {
 
             res.json({
                 _id: user.id,
-                firstName: user.firstName,
+                name: user.role=='organizer' ? user.organizerName : user.firstName,
                 email: user.email,
                 role: user.role,
                 token: token
