@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const eventSchema = new mongoose.Schema({
     name: {
-        type: String, 
+        type: String,
         required: true
     },
     description: {
@@ -12,6 +12,15 @@ const eventSchema = new mongoose.Schema({
     type: {
         type: String,
         enum: ['normal', 'merchandise'],
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['Draft', 'Published', 'Ongoing', 'Completed', 'Cancelled'],
+        default: 'Draft' 
+    },
+    eligibility: {
+        type: String,
         required: true
     },
 
@@ -45,17 +54,61 @@ const eventSchema = new mongoose.Schema({
         type: String
     },
     tags: [{
-        type:String
+        type: String
+    }],
+
+    participants: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        registeredAt: {
+            type: Date,
+            default: Date.now
+        },
+        responses: {
+            type: Map, of: String
+        },
+        paymentStatus: {
+            type: String,
+            enum: ['Pending', 'Approved', 'Rejected'],
+            default: 'Approved' 
+        },
+        paymentProofUrl: {
+            type: String
+        },
+        paymentNote: {
+            type: String 
+        },
+        attendanceMarked: {
+            type: Boolean,
+            default: false
+        },
+        attendanceAt: {
+            type: Date
+        }
+    }],
+
+    formFields: [{
+        label: { type: String, required: true }, 
+        fieldType: { type: String, enum: ['text', 'number', 'dropdown', 'checkbox', 'file'], default: 'text' },
+        options: [{ type: String }], 
+        required: { type: Boolean, default: true }
     }],
 
     stock: {
-        type: Number
+        type: Number,
+        default: 0
+    },
+    purchaseLimit: {
+        type: Number,
+        default: 1
     },
     itemDetails: {
         type: Map,
-        of: String
+        of: [String]
     }
 },
-{timestamps:true});
+    { timestamps: true });
 
 module.exports = mongoose.model('Event', eventSchema);

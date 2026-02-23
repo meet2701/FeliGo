@@ -4,32 +4,43 @@ const User = require('../models/User');
 const protect = async (req, res, next) => {
     let token;
 
-    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
-        try{
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
             token = req.headers.authorization.split(' ')[1];
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             req.user = await User.findById(decoded.id).select('-password');
 
+            if (req.user?.isDisabled) {
+                return res.status(403).json({ message: 'This account has been disabled. Contact admin.' });
+            }
+
             next();
-        } catch(error){
-            consoler.error(error);
-            res.status(401).json({ message: 'Not authorized, token failed.'});
+        } catch (error) {
+            console.error(error);
+            return res.status(401).json({ message: 'Not authorized, token failed.' });
         }
     }
-    if(!token)
-    {
-        res.status(401).json({ message: 'Not authorized, No token.'});
+    if (!token) {
+        return res.status(401).json({ message: 'Not authorized, No token.' });
     }
 };
 
-const admin = (req,res,next) => {
-    if(req.user && req.user.role === 'admin'){
+const admin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
         next();
-    } else{
-        res.status(401).json({ message: 'Not authorized as an admin'});
+    } else {
+        res.status(401).json({ message: 'Not authorized as an admin' });
     }
 };
 
-module.exports = {protect,admin};
+const organizer = (req, res, next) => {
+    if (req.user && req.user.role === 'organizer') {
+        next();
+    } else {
+        res.status(401).json({ message: 'Not authorized as an an organizer' });
+    }
+};
+
+module.exports = { protect, admin, organizer };

@@ -22,15 +22,16 @@ const Login = () => {
     const onSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+            const response = await axios.post(import.meta.env.VITE_API_URL + '/api/auth/login', formData);
 
             if (response.data) {
                 localStorage.setItem('user', JSON.stringify(response.data));
                 toast.success('Login Successful!');
                 if (response.data.role === 'admin') {
                     navigate('/admin');
-                }
-                else {
+                } else if (response.data.role === 'participant' && !response.data.hasCompletedOnboarding) {
+                    navigate('/onboarding'); 
+                } else {
                     navigate('/dashboard');
                 }
             }

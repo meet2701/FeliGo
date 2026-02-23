@@ -1,32 +1,34 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios'; // The courier
-import { toast } from 'react-toastify'; // The popup alerts
-import { useNavigate, Link } from 'react-router-dom'; // For redirecting pages
+import axios from 'axios'; 
+import { toast } from 'react-toastify';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Register = () => {
-  // 1. STATE: This holds what the user types in real-time
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
-    role: 'participant', // Default role
+    role: 'participant',
+    participantType: 'IIIT'
   });
 
-  const [isIIIT, setIsIIIT] = useState(false);
+  const [isIIIT, setIsIIIT] = useState(true);
 
   const navigate = useNavigate();
 
-  // Destructure for easier access
-  const { firstName, lastName, email, password, role } = formData;
+  const { firstName, lastName, email, password, role, participantType } = formData;
 
 
   useEffect(() => {
-    const iiitRegex = /^[a-zA-Z0-9._%+-]+@(students\.)?iiit\.ac\.in$/;
-    setIsIIIT(iiitRegex.test(email));
-  }, [email]);
+    const iiitRegex = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+\.)?iiit\.ac\.in$/;
+    if (participantType === 'IIIT') {
+      setIsIIIT(iiitRegex.test(email));
+    } else {
+      setIsIIIT(true); 
+    }
+  }, [email, participantType]);
 
-  // 2. ON CHANGE: Updates the state whenever a user types
   const onChange = (e) => {
     setFormData((prevState) => ({
       ...prevState,
@@ -34,22 +36,17 @@ const Register = () => {
     }));
   };
 
-  // 3. ON SUBMIT: The Logic Function
   const onSubmit = async (e) => {
-    e.preventDefault(); // Stop the page from reloading
+    e.preventDefault(); 
 
     try {
-      // CONNECTION: This line hits your Backend Route!
-      // Matches backend/routes/authRoutes.js -> router.post('/register')
-      const response = await axios.post('http://localhost:5000/api/auth/register', formData);
+      const response = await axios.post(import.meta.env.VITE_API_URL + '/api/auth/register', formData);
 
-      // If successful:
       if (response.data) {
         toast.success('Registration Successful! Please Login.');
-        navigate('/login'); // Move user to Login page
+        navigate('/login'); 
       }
     } catch (error) {
-      // If error (e.g., Email already exists):
       const message = error.response?.data?.message || 'Registration failed';
       toast.error(message);
     }
@@ -63,6 +60,31 @@ const Register = () => {
       </p>
 
       <form onSubmit={onSubmit}>
+        {/* PARTICIPANT TYPE SELECTION */}
+        <div className="mb-4 flex justify-center gap-4">
+          <label className={`cursor-pointer px-4 py-2 rounded border ${participantType === 'IIIT' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300'}`}>
+            <input
+              type="radio"
+              name="participantType"
+              value="IIIT"
+              checked={participantType === 'IIIT'}
+              onChange={onChange}
+              className="hidden"
+            />
+            IIIT Student
+          </label>
+          <label className={`cursor-pointer px-4 py-2 rounded border ${participantType === 'Non-IIIT' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300'}`}>
+            <input
+              type="radio"
+              name="participantType"
+              value="Non-IIIT"
+              checked={participantType === 'Non-IIIT'}
+              onChange={onChange}
+              className="hidden"
+            />
+            Non-IIIT
+          </label>
+        </div>
         <div className="mb-4">
           <input
             type="text"
@@ -95,12 +117,16 @@ const Register = () => {
             placeholder="Email Address (Use IIIT if applicable)"
             onChange={onChange}
             required
-            // style={{borderColor: isIIIT ? 'green' : '#ccc' }} 
             className={`w-full p-2 border rounded focus:outline-none focus:ring-2 ${isIIIT ? 'border-green-500 focus:ring-green-500' : 'border-gray-300 focus:ring-blue-500'}`}
           />
-          {email.length > 5 && (
-            <small className={`block mt-1 font-bold text-sm ${isIIIT ? 'text-green-600' : 'text-gray-500'}`}>
-              {isIIIT ? '✓ IIIT Student Detected' : '• Non-IIIT Participant'}
+          {email.length > 0 && participantType === 'IIIT' && (
+            <small className={`block mt-1 font-bold text-sm ${isIIIT ? 'text-green-600' : 'text-red-500'}`}>
+              {isIIIT ? '✓ Valid IIIT Email' : '⚠ Must be an IIIT email (@*.iiit.ac.in)'}
+            </small>
+          )}
+          {email.length > 0 && participantType === 'Non-IIIT' && (
+            <small className={`block mt-1 font-bold text-sm ${/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'text-green-600' : 'text-red-500'}`}>
+              {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '✓ Valid Email' : '⚠ Enter a valid email address'}
             </small>
           )}
         </div>
