@@ -659,7 +659,7 @@ const OrganizerEventDetail = () => {
                                 </tbody>
                             </table>
                             <div className="px-4 py-3 border-t text-xs text-gray-500">
-                                Showing {filteredParticipants.length} of {data.totalRegistrations} participants
+                                Showing {filteredParticipants.length} of {data.participants.filter(p => p.paymentStatus === 'Approved').length} approved participants
                             </div>
                         </div>
                     )}
@@ -719,26 +719,29 @@ const OrganizerEventDetail = () => {
             {activeTab === 'attendance' && (
                 <div className="space-y-5">
                     {/* Summary bar */}
+                    {(() => {
+                        const approvedParticipants = data.participants.filter(p => p.paymentStatus === 'Approved');
+                        const checkedIn = approvedParticipants.filter(p => p.attendanceMarked).length;
+                        const total = approvedParticipants.length;
+                        return (
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-white rounded-xl border shadow-sm p-5 text-center">
-                            <p className="text-3xl font-bold text-green-600">
-                                {data.participants.filter(p => p.attendanceMarked).length}
-                            </p>
+                            <p className="text-3xl font-bold text-green-600">{checkedIn}</p>
                             <p className="text-sm text-gray-500 mt-1">Checked In</p>
                         </div>
                         <div className="bg-white rounded-xl border shadow-sm p-5 text-center">
-                            <p className="text-3xl font-bold text-gray-700">{data.totalRegistrations}</p>
-                            <p className="text-sm text-gray-500 mt-1">Total Registered</p>
+                            <p className="text-3xl font-bold text-gray-700">{total}</p>
+                            <p className="text-sm text-gray-500 mt-1">Approved Participants</p>
                         </div>
                         <div className="bg-white rounded-xl border shadow-sm p-5 text-center">
                             <p className="text-3xl font-bold text-blue-600">
-                                {data.totalRegistrations > 0
-                                    ? `${Math.round((data.participants.filter(p => p.attendanceMarked).length / data.totalRegistrations) * 100)}%`
-                                    : '0%'}
+                                {total > 0 ? `${Math.round((checkedIn / total) * 100)}%` : '0%'}
                             </p>
                             <p className="text-sm text-gray-500 mt-1">Attendance Rate</p>
                         </div>
                     </div>
+                        );
+                    })()}
 
                     {/* QR Scanner */}
                     <div className="bg-white rounded-xl border shadow-sm p-6">
