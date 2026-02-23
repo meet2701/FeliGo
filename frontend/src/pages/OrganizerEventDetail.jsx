@@ -405,9 +405,8 @@ const OrganizerEventDetail = () => {
         try {
             await axios.put(`${import.meta.env.VITE_API_URL}/api/events/${id}/orders/${orderId}/${action}`, { note }, config);
             toast.success(action === 'approve' ? 'Order approved. Ticket sent.' : 'Order rejected.');
-            const ordersRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/events/${id}/orders`, config);
-            setOrders(ordersRes.data.orders || []);
-            setStockRemaining(ordersRes.data.stock ?? null);
+            // Refresh everything so Participants tab stays in sync
+            await fetchData();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Action failed');
         }
