@@ -21,7 +21,7 @@ const EditEvent = () => {
 
     const [formFields, setFormFields] = useState([]);
     const [newQuestion, setNewQuestion] = useState({ label: '', fieldType: 'text', options: '', required: true });
-    const [itemDetailsList, setItemDetailsList] = useState([{ key: '', value: '' }]);
+    const [itemDetailsList, setItemDetailsList] = useState([{ key: '', options: [], newOption: '' }]);
 
     useEffect(() => { fetchEvent(); }, [id]);
 
@@ -46,7 +46,8 @@ const EditEvent = () => {
                 if (entries.length > 0) {
                     setItemDetailsList(entries.map(([key, value]) => ({
                         key,
-                        value: Array.isArray(value) ? value.join(', ') : (value || '')
+                        options: Array.isArray(value) ? value : (value ? value.toString().split(',').map(o => o.trim()).filter(o => o) : []),
+                        newOption: ''
                     })));
                 }
             }
@@ -68,11 +69,24 @@ const EditEvent = () => {
     const isRegClosed = isPublished && formData.registrationDeadline && new Date(formData.registrationDeadline) < new Date();
     const formLocked = participantCount > 0;
 
-    const addItemDetail = () => setItemDetailsList([...itemDetailsList, { key: '', value: '' }]);
+    const addItemDetail = () => setItemDetailsList([...itemDetailsList, { key: '', options: [], newOption: '' }]);
     const removeItemDetail = (i) => setItemDetailsList(itemDetailsList.filter((_, idx) => idx !== i));
     const updateItemDetail = (i, field, val) => {
         const updated = [...itemDetailsList];
         updated[i][field] = val;
+        setItemDetailsList(updated);
+    };
+    const addOptionToVariant = (i) => {
+        const opt = itemDetailsList[i].newOption.trim();
+        if (!opt || itemDetailsList[i].options.includes(opt)) return;
+        const updated = [...itemDetailsList];
+        updated[i].options = [...updated[i].options, opt];
+        updated[i].newOption = '';
+        setItemDetailsList(updated);
+    };
+    const removeOptionFromVariant = (i, opt) => {
+        const updated = [...itemDetailsList];
+        updated[i].options = updated[i].options.filter(o => o !== opt);
         setItemDetailsList(updated);
     };
 
@@ -114,12 +128,10 @@ const EditEvent = () => {
             if (action) payload.action = action;
             if (formData.type === 'normal') payload.formFields = formFields;
             if (formData.type === 'merchandise') {
+                const validVariants = itemDetailsList.filter(d => d.key.trim() && d.options.length > 0);
+                if (validVariants.length === 0) return toast.error("Add at least one variant with options.");
                 const detailsMap = {};
-                itemDetailsList.forEach(d => {
-                    if (d.key.trim()) {
-                        detailsMap[d.key.trim()] = d.value.split(',').map(o => o.trim()).filter(o => o);
-                    }
-                });
+                validVariants.forEach(d => { detailsMap[d.key.trim()] = d.options; });
                 payload.itemDetails = detailsMap;
             }
 
@@ -307,14 +319,29 @@ const EditEvent = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block font-bold mb-1">Item Variants</label>
+                            <label className="block font-bold mb-1">Item Variants <span className="text-red-500">*</span></label>
                             <p className="text-xs text-gray-500 mb-2">Each variant becomes a required dropdown during registration.</p>
                             {itemDetailsList.map((item, i) => (
-                                <div key={i} className="flex gap-2 mb-2">
-                                    <input type="text" value={item.key} onChange={(e) => updateItemDetail(i, 'key', e.target.value)} placeholder="Variant name (e.g. Size)" className="w-1/3 p-2 border rounded" disabled={isPublished} />
-                                    <input type="text" value={item.value} onChange={(e) => updateItemDetail(i, 'value', e.target.value)} placeholder="Options comma-separated (e.g. S, M, L, XL)" className="flex-1 p-2 border rounded" disabled={isPublished} />
-                                    {!isPublished && itemDetailsList.length > 1 && (
-                                        <button type="button" onClick={() => removeItemDetail(i)} className="text-red-500 text-sm px-2">Remove</button>
+                                <div key={i} className="mb-3 border rounded p-3 bg-gray-50">
+                                    <div className="flex gap-2 mb-2">
+                                        <input type="text" value={item.key} onChange={(e) => updateItemDetail(i, 'key', e.target.value)} placeholder="Variant name (e.g. Size)" className="flex-1 p-2 border rounded" disabled={isPublished} />
+                                        {!isPublished && itemDetailsList.length > 1 && (
+                                            <button type="button" onClick={() => removeItemDetail(i)} className="text-red-500 text-sm px-2">Remove</button>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                        {item.options.map(opt => (
+                                            <span key={opt} className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                                {opt}
+                                                {!isPublished && <button type="button" onClick={() => removeOptionFromVariant(i, opt)} className="text-blue-600 hover:text-red-500 font-bold leading-none">×</button>}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    {!isPublished && (
+                                        <div className="flex gap-2">
+                                            <input type="text" value={item.newOption} onChange={(e) => updateItemDetail(i, 'newOption', e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOptionToVariant(i); } }} placeholder="Add option, press Enter" className="flex-1 p-2 border rounded text-sm" />
+                                            <button type="button" onClick={() => addOptionToVariant(i)} className="px-3 py-1 bg-blue-600 text-white rounded text-sm">Add</button>
+                                        </div>
                                     )}
                                 </div>
                             ))}
