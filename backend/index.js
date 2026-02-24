@@ -210,19 +210,9 @@ io.on('connection', (socket) => {
                 isReply: !!parentMessageId
             };
 
-            const offlineToNotify = [];
-            for (const uid of usersToNotify) {
-                const targetSocketId = userSockets[uid];
-                if (targetSocketId) {
-                    // User is online — send live notification directly
-                    io.to(targetSocketId).emit('live_notification', notifPayload);
-                } else {
-                    // User is offline — save to DB for later
-                    offlineToNotify.push(uid);
-                }
-            }
-            if (offlineToNotify.length > 0) {
-                const notifDocs = offlineToNotify.map(uid => ({
+            // save to DB for Notifications tab
+            if (usersToNotify.length > 0) {
+                const notifDocs = usersToNotify.map(uid => ({
                     user: uid,
                     event: eventId,
                     message: msg._id,
@@ -231,6 +221,13 @@ io.on('connection', (socket) => {
                     eventName: event.name
                 }));
                 Notification.insertMany(notifDocs).catch(err => console.error('Notification save error:', err.message));
+            }
+            // live popup to online users
+            for (const uid of usersToNotify) {
+                const targetSocketId = userSockets[uid];
+                if (targetSocketId) {
+                    io.to(targetSocketId).emit('live_notification', notifPayload);
+                }
             }
         } catch (e) {
             socket.emit('error', { message: 'Send failed' });
@@ -309,12 +306,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        // Remove user from room tracking
         if (socket.currentEventId && roomUsers[socket.currentEventId]) {
             roomUsers[socket.currentEventId].delete(socket.user._id.toString());
             if (roomUsers[socket.currentEventId].size === 0) delete roomUsers[socket.currentEventId];
         }
-        // Remove from global user socket map
         const uid = socket.user._id.toString();
         if (userSockets[uid] === socket.id) delete userSockets[uid];
     });
