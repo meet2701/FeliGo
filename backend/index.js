@@ -131,8 +131,10 @@ io.use(async (socket, next) => {
 });
 
 io.on('connection', (socket) => {
-    // live notifications
-    userSockets[socket.user._id.toString()] = socket.id;
+    // Tracking ALL sockets for a user 
+    const uid = socket.user._id.toString();
+    if (!userSockets[uid]) userSockets[uid] = new Set();
+    userSockets[uid].add(socket.id);
 
     socket.on('join_forum', async ({ eventId }) => {
         try {
@@ -222,11 +224,13 @@ io.on('connection', (socket) => {
                 }));
                 Notification.insertMany(notifDocs).catch(err => console.error('Notification save error:', err.message));
             }
-            // live popup to online users
+            // live popup to all online sockets for each user
             for (const uid of usersToNotify) {
-                const targetSocketId = userSockets[uid];
-                if (targetSocketId) {
-                    io.to(targetSocketId).emit('live_notification', notifPayload);
+                const socketIds = userSockets[uid];
+                if (socketIds) {
+                    for (const sid of socketIds) {
+                        io.to(sid).emit('live_notification', notifPayload);
+                    }
                 }
             }
         } catch (e) {
@@ -311,7 +315,10 @@ io.on('connection', (socket) => {
             if (roomUsers[socket.currentEventId].size === 0) delete roomUsers[socket.currentEventId];
         }
         const uid = socket.user._id.toString();
-        if (userSockets[uid] === socket.id) delete userSockets[uid];
+        if (userSockets[uid]) {
+            userSockets[uid].delete(socket.id);
+            if (userSockets[uid].size === 0) delete userSockets[uid];
+        }
     });
 });
 
