@@ -12,6 +12,10 @@ const Notifications = () => {
     useEffect(() => {
         if (!user) { navigate('/login'); return; }
         fetchNotifications();
+
+        // Re-fetch instantly whenever a live notification arrives
+        window.addEventListener('notifications-updated', fetchNotifications);
+        return () => window.removeEventListener('notifications-updated', fetchNotifications);
     }, []);
 
     const fetchNotifications = async () => {

@@ -27,14 +27,23 @@ const Navbar = () => {
         const interval = setInterval(fetchUnread, 30000);
         window.addEventListener('notifications-updated', fetchUnread);
 
-        // Global socket for live notifications
-        const socket = io(import.meta.env.VITE_API_URL, { auth: { token: user.token } });
+        // Global socket — mount once, stays alive for entire session
+        const socket = io(import.meta.env.VITE_API_URL, {
+            auth: { token: user.token },
+            reconnection: true,
+        });
         socket.on('live_notification', ({ eventName, senderName, isReply }) => {
             const msg = isReply
                 ? `${senderName} replied in "${eventName}"`
                 : `New announcement in "${eventName}"`;
-            toast.info(msg, { autoClose: 5000 });
+            toast.info(msg, {
+                autoClose: 6000,
+                onClick: () => navigate('/notifications'),
+                style: { cursor: 'pointer' },
+            });
             setUnreadCount(c => c + 1);
+            // refresh notifs list instantly
+            window.dispatchEvent(new Event('notifications-updated'));
         });
 
         return () => {
@@ -42,7 +51,7 @@ const Navbar = () => {
             window.removeEventListener('notifications-updated', fetchUnread);
             socket.disconnect();
         };
-    }, [location.pathname]);
+    }, []); // [] = mount once 
 
     if (!user) return null;
 
