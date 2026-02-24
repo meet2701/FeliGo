@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
@@ -10,39 +10,38 @@ const Navbar = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     const [unreadCount, setUnreadCount] = useState(0);
 
-    useEffect(() => {
-        if (!user || user.role === 'admin') return;
+    const fetchUnread = useCallback(async () => {
+        if (!user?.token) return;
+        try {
+            const res = await axios.get(import.meta.env.VITE_API_URL + '/api/notifications', {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setUnreadCount(res.data.filter(n => !n.isRead).length);
+        } catch { }
+    }, [user?.token]);
 
-        const fetchUnread = async () => {
-            try {
-                const res = await axios.get(import.meta.env.VITE_API_URL + '/api/notifications', {
-                    headers: { Authorization: `Bearer ${user.token}` }
-                });
-                setUnreadCount(res.data.filter(n => !n.isRead).length);
-            } catch {
-            }
-        };
+    useEffect(() => {
+        if (!user?.token || user.role === 'admin') return;
 
         fetchUnread();
-        const interval = setInterval(fetchUnread, 30000);
+        const interval = setInterval(fetchUnread, 60000);
         window.addEventListener('notifications-updated', fetchUnread);
 
-        // Global socket — mount once, stays alive for entire session
         const socket = io(import.meta.env.VITE_API_URL, {
             auth: { token: user.token },
+            transports: ['websocket'],
             reconnection: true,
         });
         socket.on('live_notification', ({ eventName, senderName, isReply }) => {
             const msg = isReply
-                ? `${senderName} replied in "${eventName}"`
-                : `New announcement in "${eventName}"`;
+                ? `💬 ${senderName} replied in "${eventName}"`
+                : `📢 New announcement in "${eventName}"`;
             toast.info(msg, {
                 autoClose: 6000,
                 onClick: () => navigate('/notifications'),
                 style: { cursor: 'pointer' },
             });
             setUnreadCount(c => c + 1);
-            // refresh notifs list instantly
             window.dispatchEvent(new Event('notifications-updated'));
         });
 
@@ -51,7 +50,7 @@ const Navbar = () => {
             window.removeEventListener('notifications-updated', fetchUnread);
             socket.disconnect();
         };
-    }, []); // [] = mount once 
+    }, [user?.token]); // re-run when token changes (i.e. after login)
 
     if (!user) return null;
 
