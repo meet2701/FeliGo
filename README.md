@@ -69,7 +69,7 @@ FRONTEND_URL=http://localhost:5173
 
 Create `frontend/.env`:
 ```
-VITE_BACKEND_URL=http://localhost:5000
+VITE_API_URL=http://localhost:5000
 ```
 
 ### 2. Run backend
