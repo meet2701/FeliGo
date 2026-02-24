@@ -193,11 +193,17 @@ const getRegisteredEvents = async (req, res) => {
         const events = await Event.find({ 'participants.user': req.user.id })
             .populate('organizer', 'organizerName email category');
 
-        // Attach participant's own responses to each event
+        // Attach participant's own registration to each event.
+        // If user has multiple entries (e.g. rejected then re-ordered), pick the best one:
+        // Approved > Pending > Rejected
+        const STATUS_PRIORITY = { Approved: 0, Pending: 1, Rejected: 2 };
         const result = events.map(event => {
-            const myEntry = event.participants.find(
+            const myEntries = event.participants.filter(
                 p => p.user.toString() === req.user.id
             );
+            const myEntry = myEntries.sort(
+                (a, b) => (STATUS_PRIORITY[a.paymentStatus] ?? 1) - (STATUS_PRIORITY[b.paymentStatus] ?? 1)
+            )[0];
             return {
                 ...event.toObject(),
                 myRegistration: {
