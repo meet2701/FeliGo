@@ -188,6 +188,7 @@ const OrganizerEventDetail = () => {
     const [scannerActive, setScannerActive] = useState(false);
     const [lastScan, setLastScan] = useState(null);
     const scannerRef = useRef(null);
+    const scanLockRef = useRef(false);
     const scannerDivId = 'qr-reader';
 
     const [forumMessages, setForumMessages] = useState([]);
@@ -358,11 +359,21 @@ const OrganizerEventDetail = () => {
 
     const startScanner = () => {
         if (scannerRef.current) return;
+        scanLockRef.current = false;
         setScannerActive(true);
         setTimeout(() => {
             const scanner = new Html5QrcodeScanner(scannerDivId, { fps: 10, qrbox: 250 }, false);
             scanner.render(
                 async (decodedText) => {
+                    if (scanLockRef.current) return;
+                    scanLockRef.current = true;
+
+                    if (scannerRef.current) {
+                        scannerRef.current.clear().catch(() => {});
+                        scannerRef.current = null;
+                    }
+                    setScannerActive(false);
+
                     try {
                         const payload = JSON.parse(decodedText);
                         const ticketId = payload.ticketId;
@@ -395,6 +406,7 @@ const OrganizerEventDetail = () => {
             scannerRef.current.clear().catch(() => {});
             scannerRef.current = null;
         }
+        scanLockRef.current = false;
         setScannerActive(false);
         setLastScan(null);
     };
