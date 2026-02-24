@@ -112,7 +112,9 @@ const CreateEvent = () => {
 
         if (type === 'merchandise') {
             const validVariants = itemDetailsList.filter(d => d.key.trim() && d.options.length > 0);
-            if (validVariants.length === 0) return toast.error("Add at least one variant with options (e.g. Size: S, M, L).");
+            if (validVariants.length === 0) return toast.error("Add at least one variant (e.g. Size, Color) with at least one option.");
+            const missingOptions = itemDetailsList.find(d => d.key.trim() && d.options.length === 0);
+            if (missingOptions) return toast.error(`Variant "${missingOptions.key}" must have at least one option.`);
             const detailsMap = {};
             validVariants.forEach(d => { detailsMap[d.key.trim()] = d.options; });
             eventData.itemDetails = detailsMap;
@@ -217,7 +219,6 @@ const CreateEvent = () => {
 
                     {type === 'merchandise' && (
                         <div className="border-t pt-6 mt-2 mb-6">
-                            <h2 className="text-xl font-bold mb-4">Merchandise Details</h2>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label className="block text-gray-700 font-bold mb-2">Stock Quantity</label>
@@ -229,15 +230,18 @@ const CreateEvent = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-gray-700 font-bold mb-1">Item Variants <span className="text-red-500">*</span></label>
-                                <p className="text-xs text-gray-500 mb-2">Each variant becomes a required dropdown during registration.</p>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-gray-700 font-bold">Variants <span className="text-red-500">*</span></label>
+                                    <button type="button" onClick={addItemDetail} className="text-blue-600 hover:underline text-sm">+ Add Variant</button>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-2">Each variant (e.g. Size, Color) must have at least one option selected by the buyer.</p>
                                 {itemDetailsList.map((item, i) => (
                                     <div key={i} className="mb-3 p-3 border rounded bg-gray-50">
                                         <div className="flex gap-2 mb-2">
                                             <input type="text" value={item.key} onChange={(e) => updateItemDetail(i, 'key', e.target.value)}
-                                                placeholder="Variant name (e.g. Size, Color)" className="flex-1 p-2 border rounded text-sm" />
+                                                placeholder="Variant Name (e.g. Size, Color)" className="flex-1 p-2 border rounded text-sm" />
                                             {itemDetailsList.length > 1 && (
-                                                <button type="button" onClick={() => removeItemDetail(i)} className="text-red-500 text-sm px-2 hover:underline">Remove</button>
+                                                <button type="button" onClick={() => removeItemDetail(i)} className="text-red-500 text-sm px-2 hover:underline">✕</button>
                                             )}
                                         </div>
                                         <div className="flex flex-wrap gap-1 mb-2">
@@ -257,7 +261,6 @@ const CreateEvent = () => {
                                         </div>
                                     </div>
                                 ))}
-                                <button type="button" onClick={addItemDetail} className="text-blue-600 hover:underline text-sm mt-1">+ Add Variant</button>
                             </div>
                         </div>
                     )}

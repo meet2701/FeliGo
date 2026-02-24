@@ -301,7 +301,7 @@ const EventDetails = () => {
 
             <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 mb-8">
                 <div className={`p-8 text-white text-center ${event.type === 'normal' ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : 'bg-gradient-to-r from-purple-500 to-pink-500'}`}>
-                    <span className="inline-block px-3 py-1 mb-3 text-xs font-bold uppercase tracking-wider bg-white bg-opacity-20 rounded-full">
+                    <span className={`inline-block px-3 py-1 mb-3 text-xs font-bold uppercase tracking-wider rounded-full ${event.type === 'normal' ? 'bg-indigo-900 text-blue-100' : 'bg-pink-900 text-pink-100'}`}>
                         {event.type} event
                     </span>
                     <h1 className="text-4xl font-extrabold mb-2">{event.name}</h1>
@@ -409,6 +409,9 @@ const EventDetails = () => {
                                         className="w-full py-2.5 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 transition text-sm">
                                         {event.type === 'merchandise' ? 'Purchase Now' : 'Register Now'}
                                     </button>
+                                )}
+                                {event.type === 'merchandise' && (
+                                    <p className="text-xs text-gray-400 text-center">One purchase per user.</p>
                                 )}
                             </div>
 

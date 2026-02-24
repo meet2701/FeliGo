@@ -361,6 +361,8 @@ const approvePayment = async (req, res) => {
                 ticketId: entry._id,
                 registeredAt: entry.registeredAt,
                 type: 'merchandise',
+                responses: entry.responses ? Object.fromEntries(entry.responses) : {},
+                price: event.price,
                 qrBase64
             }),
             qrBase64
