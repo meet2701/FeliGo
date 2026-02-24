@@ -16,7 +16,8 @@ const EditEvent = () => {
         startDate: '', endDate: '', registrationDeadline: '',
         registrationLimit: '', price: 0, location: '',
         eligibility: '', status: 'Draft', tags: '',
-        stock: 0, purchaseLimit: 1
+        stock: 0, purchaseLimit: 1,
+        upiId: ''
     });
 
     const [formFields, setFormFields] = useState([]);
@@ -32,6 +33,7 @@ const EditEvent = () => {
             const fmt = (d) => d ? new Date(d).toISOString().slice(0, 16) : '';
             setFormData({
                 name: e.name, description: e.description, type: e.type,
+                upiId: e.upiId || '',
                 startDate: fmt(e.startDate), endDate: fmt(e.endDate),
                 registrationDeadline: fmt(e.registrationDeadline),
                 registrationLimit: e.registrationLimit || '',
@@ -135,6 +137,7 @@ const EditEvent = () => {
                 const detailsMap = {};
                 validVariants.forEach(d => { detailsMap[d.key.trim()] = d.options; });
                 payload.itemDetails = detailsMap;
+                if (!formData.upiId || !formData.upiId.trim()) return toast.error('UPI ID is required for merchandise events');
             }
 
             if (overrideStatus === 'Published') {
@@ -309,6 +312,10 @@ const EditEvent = () => {
                 {/* Merchandise Details */}
                 {formData.type === 'merchandise' && !isLocked && (
                     <div className="mt-6 border-t pt-6">
+                        <div className="mb-4">
+                            <label className="block font-bold mb-1">Organizer UPI ID <span className="text-red-500">*</span></label>
+                            <input type="text" name="upiId" value={formData.upiId} onChange={onChange} placeholder="eg: yourname@upi" className="w-full p-2 border rounded" disabled={isPublished} />
+                        </div>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label className="block font-bold mb-1">Stock Quantity</label>

@@ -542,6 +542,19 @@ const EventDetails = () => {
                     <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-8">
                         <h2 className="text-xl font-bold mb-1">Place Order — {event.name}</h2>
                         <p className="text-sm text-gray-500 mb-4">Complete your payment and upload a screenshot as proof. Your order will be confirmed once the organizer approves it.</p>
+                        {event.upiId && (
+                            <div className="mb-4 flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
+                                <span className="text-purple-700 text-lg">💳</span>
+                                <div>
+                                    <p className="text-xs text-purple-500 font-semibold uppercase tracking-wide">Pay to UPI</p>
+                                    <p className="font-bold text-purple-900 text-sm select-all">{event.upiId}</p>
+                                </div>
+                                <button type="button" onClick={() => { navigator.clipboard.writeText(event.upiId); toast.success('UPI ID copied!'); }}
+                                    className="ml-auto text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded font-semibold">
+                                    Copy
+                                </button>
+                            </div>
+                        )}
                         <form onSubmit={submitMerchOrder} className="space-y-4">
                             {event.itemDetails && Object.keys(event.itemDetails).length > 0 && (
                                 <div className="space-y-3 pb-3 border-b">

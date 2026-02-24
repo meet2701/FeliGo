@@ -94,6 +94,10 @@ const createEvent = async (req, res) => {
             eventData.stock = stock || 0;
             eventData.purchaseLimit = purchaseLimit || 1;
             if (itemDetails) eventData.itemDetails = itemDetails;
+            if (!req.body.upiId || !req.body.upiId.trim()) {
+                return res.status(400).json({ message: 'UPI ID is required for merchandise events' });
+            }
+            eventData.upiId = req.body.upiId.trim();
         }
 
         const event = await Event.create(eventData);
@@ -244,6 +248,14 @@ const updateEvent = async (req, res) => {
         }
 
         const isPublishing = currentStatus === 'Draft' && req.body.status === 'Published';
+
+        if (req.body.type === 'merchandise' || (event.type === 'merchandise')) {
+            const upiCandidate = req.body.upiId || event.upiId;
+            if (!upiCandidate || !upiCandidate.trim()) {
+                return res.status(400).json({ message: 'UPI ID is required for merchandise events' });
+            }
+            req.body.upiId = upiCandidate.trim();
+        }
 
         const updatedEvent = await Event.findByIdAndUpdate(
             req.params.id,

@@ -28,6 +28,13 @@ const DashboardRoute = () => {
     return <Dashboard />;
 };
 
+// Redirect logged-in users away from login/register
+const GuestRoute = ({ children }) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) return <Navigate to="/dashboard" />;
+    return children;
+};
+
 // Generic guard: must be logged in
 const PrivateRoute = ({ children }) => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -58,8 +65,9 @@ function App() {
           <Navbar />
           <ToastContainer position="top-right" autoClose={3000} />
           <Routes>
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+            <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+            <Route path="/" element={<GuestRoute><Login /></GuestRoute>} />
             <Route path="/dashboard" element={<DashboardRoute />} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/create-event" element={<OrganizerRoute><CreateEvent /></OrganizerRoute>} />
@@ -73,7 +81,6 @@ function App() {
             <Route path="/organizer/event/:id" element={<OrganizerRoute><OrganizerEventDetail /></OrganizerRoute>} />
             <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
             <Route path="/ongoing-events" element={<PrivateRoute><OngoingEvents /></PrivateRoute>} />
-            <Route path="/" element={<Login />} />
           </Routes>
       </Router>
     </>

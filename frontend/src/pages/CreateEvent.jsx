@@ -36,6 +36,8 @@ const CreateEvent = () => {
 
     const { name, description, type, startDate, endDate, registrationDeadline, registrationLimit, price, location, tags, eligibility, stock, purchaseLimit } = formData;
 
+    const [upiId, setUpiId] = useState('');
+
     const addItemDetail = () => setItemDetailsList([...itemDetailsList, { key: '', options: [], newOption: '' }]);
     const removeItemDetail = (i) => setItemDetailsList(itemDetailsList.filter((_, idx) => idx !== i));
     const updateItemDetail = (i, field, val) => {
@@ -118,6 +120,8 @@ const CreateEvent = () => {
             const detailsMap = {};
             validVariants.forEach(d => { detailsMap[d.key.trim()] = d.options; });
             eventData.itemDetails = detailsMap;
+            if (!upiId || !upiId.trim()) return toast.error('UPI ID is required for merchandise events');
+            eventData.upiId = upiId.trim();
         }
 
         try {
@@ -230,6 +234,10 @@ const CreateEvent = () => {
                                 </div>
                             </div>
                             <div>
+                                <div className="mb-4">
+                                    <label className="block text-gray-700 font-bold mb-2">Organizer UPI ID <span className="text-red-500">*</span></label>
+                                    <input type="text" value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="eg: yourname@upi" className="w-full p-2 border rounded" />
+                                </div>
                                 <div className="flex items-center justify-between mb-1">
                                     <label className="block text-gray-700 font-bold">Variants <span className="text-red-500">*</span></label>
                                     <button type="button" onClick={addItemDetail} className="text-blue-600 hover:underline text-sm">+ Add Variant</button>

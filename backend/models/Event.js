@@ -108,6 +108,10 @@ const eventSchema = new mongoose.Schema({
         type: Map,
         of: [String]
     }
+    ,
+    upiId: {
+        type: String
+    }
 },
     { timestamps: true });
 

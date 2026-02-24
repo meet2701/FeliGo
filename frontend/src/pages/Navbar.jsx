@@ -53,7 +53,8 @@ const Navbar = () => {
         };
     }, [user?.token]);
 
-    if (!user) return null;
+    const authRoutes = ['/', '/login', '/register'];
+    if (!user || authRoutes.includes(location.pathname)) return null;
 
     const role = user.role;
 
