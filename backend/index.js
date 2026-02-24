@@ -113,6 +113,8 @@ app.put('/api/notifications/read', protect, async (req, res) => {
 // ---- Socket.io Forum ----
 // Track connected users per event room: { eventId: Set<userId> }
 const roomUsers = {};
+// Track socket per user for direct live notifications: { userId: socketId }
+const userSockets = {};
 
 io.use(async (socket, next) => {
     try {
@@ -129,6 +131,9 @@ io.use(async (socket, next) => {
 });
 
 io.on('connection', (socket) => {
+    // live notifications
+    userSockets[socket.user._id.toString()] = socket.id;
+
     socket.on('join_forum', async ({ eventId }) => {
         try {
             const event = await Event.findById(eventId);
@@ -196,7 +201,26 @@ io.on('connection', (socket) => {
                 const threadParticipants = [...new Set(threadMessages.map(m => m.sender.toString()))];
                 usersToNotify = threadParticipants.filter(uid => uid !== senderId);
             }
-            const offlineToNotify = usersToNotify.filter(uid => !onlineUsers.has(uid));
+
+            const notifPayload = {
+                eventId,
+                eventName: event.name,
+                senderName,
+                text: text.slice(0, 200),
+                isReply: !!parentMessageId
+            };
+
+            const offlineToNotify = [];
+            for (const uid of usersToNotify) {
+                const targetSocketId = userSockets[uid];
+                if (targetSocketId) {
+                    // User is online — send live notification directly
+                    io.to(targetSocketId).emit('live_notification', notifPayload);
+                } else {
+                    // User is offline — save to DB for later
+                    offlineToNotify.push(uid);
+                }
+            }
             if (offlineToNotify.length > 0) {
                 const notifDocs = offlineToNotify.map(uid => ({
                     user: uid,
@@ -290,6 +314,9 @@ io.on('connection', (socket) => {
             roomUsers[socket.currentEventId].delete(socket.user._id.toString());
             if (roomUsers[socket.currentEventId].size === 0) delete roomUsers[socket.currentEventId];
         }
+        // Remove from global user socket map
+        const uid = socket.user._id.toString();
+        if (userSockets[uid] === socket.id) delete userSockets[uid];
     });
 });
 
