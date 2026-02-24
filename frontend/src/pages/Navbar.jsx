@@ -9,6 +9,7 @@ const Navbar = () => {
     const location = useLocation();
     const user = JSON.parse(localStorage.getItem('user'));
     const [unreadCount, setUnreadCount] = useState(0);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const fetchUnread = useCallback(async () => {
         if (!user?.token) return;
@@ -50,7 +51,7 @@ const Navbar = () => {
             window.removeEventListener('notifications-updated', fetchUnread);
             socket.disconnect();
         };
-    }, [user?.token]); // re-run when token changes (i.e. after login)
+    }, [user?.token]);
 
     if (!user) return null;
 
@@ -70,68 +71,78 @@ const Navbar = () => {
                 : 'text-blue-100 hover:bg-blue-500 hover:text-white'
         }`;
 
+    const mobileLinkClass = (path) =>
+        `block px-4 py-3 text-sm font-medium border-b border-blue-500 transition ${
+            isActive(path) ? 'bg-blue-800 text-white' : 'text-blue-100 hover:bg-blue-500'
+        }`;
+
+    const links = role === 'participant' ? [
+        { to: '/dashboard', label: 'Dashboard' },
+        { to: '/events', label: 'Browse Events' },
+        { to: '/clubs', label: 'Clubs' },
+        { to: '/notifications', label: 'Notifications', badge: unreadCount },
+        { to: '/profile', label: 'Profile' },
+    ] : role === 'organizer' ? [
+        { to: '/dashboard', label: 'Dashboard' },
+        { to: '/create-event', label: 'Create Event' },
+        { to: '/ongoing-events', label: 'Ongoing Events' },
+        { to: '/notifications', label: 'Notifications', badge: unreadCount },
+        { to: '/profile', label: 'Profile' },
+    ] : [
+        { to: '/admin', label: 'Dashboard' },
+        { to: '/admin?tab=manage', label: 'Manage Clubs' },
+        { to: '/admin?tab=password', label: 'Password Requests' },
+    ];
+
     return (
         <nav className="bg-blue-600 shadow-md sticky top-0 z-50">
             <div className="container mx-auto px-4 flex items-center justify-between h-14">
-                {/* Logo */}
-                <Link to="/dashboard" className="text-white font-bold text-lg tracking-wide">
-                    FeliGo
-                </Link>
+                <Link to="/dashboard" className="text-white font-bold text-lg tracking-wide">FeliGo</Link>
 
-                {/* Navigation Links */}
-                <div className="flex items-center gap-1">
+                {/* Desktop links */}
+                <div className="hidden md:flex items-center gap-1">
+                    {links.map(({ to, label, badge }) => (
+                        <Link key={to} to={to} className={`${linkClass(to)} relative`}>
+                            {label}
+                            {badge > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                    {badge > 9 ? '9+' : badge}
+                                </span>
+                            )}
+                        </Link>
+                    ))}
+                    <button onClick={logout} className="ml-2 px-3 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition">Logout</button>
+                </div>
 
-                    {/* ---- Participant Navbar ---- */}
-                    {role === 'participant' && (
-                        <>
-                            <Link to="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
-                            <Link to="/events" className={linkClass('/events')}>Browse Events</Link>
-                            <Link to="/clubs" className={linkClass('/clubs')}>Clubs</Link>
-                            <Link to="/notifications" className={`${linkClass('/notifications')} relative`}>
-                                Notifications
-                                {unreadCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                                        {unreadCount > 9 ? '9+' : unreadCount}
-                                    </span>
-                                )}
-                            </Link>
-                            <Link to="/profile" className={linkClass('/profile')}>Profile</Link>
-                        </>
+                {/* Mobile: notif badge + hamburger */}
+                <div className="flex md:hidden items-center gap-3">
+                    {unreadCount > 0 && (
+                        <Link to="/notifications" className="relative text-white">
+                            🔔
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                        </Link>
                     )}
-
-                    {/* ---- Organizer Navbar ---- */}
-                    {role === 'organizer' && (
-                        <>
-                            <Link to="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
-                            <Link to="/create-event" className={linkClass('/create-event')}>Create Event</Link>
-                            <Link to="/ongoing-events" className={linkClass('/ongoing-events')}>Ongoing Events</Link>
-                            <Link to="/notifications" className={`${linkClass('/notifications')} relative`}>
-                                Notifications
-                                {unreadCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                                        {unreadCount > 9 ? '9+' : unreadCount}
-                                    </span>
-                                )}
-                            </Link>
-                            <Link to="/profile" className={linkClass('/profile')}>Profile</Link>
-                        </>
-                    )}
-
-                    {/* ---- Admin Navbar ---- */}
-                    {role === 'admin' && (
-                        <>
-                            <Link to="/admin" className={linkClass('/admin')}>Dashboard</Link>
-                            <Link to="/admin?tab=manage" className={linkClass('/admin?tab=manage')}>Manage Clubs</Link>
-                            <Link to="/admin?tab=password" className={linkClass('/admin?tab=password')}>Password Requests</Link>
-                        </>
-                    )}
-
-                    {/* Logout */}
-                    <button onClick={logout} className="ml-2 px-3 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition">
-                        Logout
+                    <button onClick={() => setMenuOpen(o => !o)} className="text-white text-2xl leading-none">
+                        {menuOpen ? '✕' : '☰'}
                     </button>
                 </div>
             </div>
+
+            {/* Mobile dropdown */}
+            {menuOpen && (
+                <div className="md:hidden bg-blue-600 border-t border-blue-500">
+                    {links.map(({ to, label }) => (
+                        <Link key={to} to={to} className={mobileLinkClass(to)} onClick={() => setMenuOpen(false)}>
+                            {label}
+                        </Link>
+                    ))}
+                    <button onClick={logout} className="w-full text-left px-4 py-3 text-sm font-medium text-red-200 hover:bg-blue-500 transition">
+                        Logout
+                    </button>
+                </div>
+            )}
         </nav>
     );
 };
