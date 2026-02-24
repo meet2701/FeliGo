@@ -174,9 +174,11 @@ const EventDetails = () => {
     useEffect(() => {
         if (!event || !user) return;
         const isOrg = event.organizer?._id?.toString() === user._id?.toString();
-        const myEntry = event.participants?.find(
+        const _myEntries = event.participants?.filter(
             p => p.user === user._id || p.user?._id === user._id || p.user?.toString() === user._id
-        );
+        ) || [];
+        const _SP = { Approved: 0, Pending: 1, Rejected: 2 };
+        const myEntry = _myEntries.sort((a, b) => (_SP[a.paymentStatus] ?? 1) - (_SP[b.paymentStatus] ?? 1))[0];
         const isReg = myEntry && myEntry.paymentStatus !== 'Rejected';
         if (!isOrg && !isReg) return;
 
@@ -278,9 +280,13 @@ const EventDetails = () => {
     );
     const isDatePassed = new Date(event.registrationDeadline) < new Date();
     const isIneligible = event.eligibility === 'IIIT Only' && user && user.participantType !== 'IIIT';
-    const myEntry = user && event.participants?.find(
+    const STATUS_PRIORITY = { Approved: 0, Pending: 1, Rejected: 2 };
+    const myEntries = user ? (event.participants?.filter(
         p => p.user === user._id || p.user?._id === user._id || p.user?.toString() === user._id
-    );
+    ) || []) : [];
+    const myEntry = myEntries.sort(
+        (a, b) => (STATUS_PRIORITY[a.paymentStatus] ?? 1) - (STATUS_PRIORITY[b.paymentStatus] ?? 1)
+    )[0];
     const isAlreadyRegistered = !!myEntry && myEntry.paymentStatus === 'Approved';
     const pendingOrder = myEntry?.paymentStatus === 'Pending';
     const isOutOfStock = event.type === 'merchandise' && event.stock <= 0;

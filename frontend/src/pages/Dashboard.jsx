@@ -129,8 +129,13 @@ const Dashboard = () => {
                                                 startDate: event.startDate,
                                                 location: event.location,
                                                 type: event.type,
+                                                price: event.price,
+                                                stock: event.stock,
+                                                itemDetails: event.itemDetails || {},
                                                 ticketId: event.myRegistration?.ticketId,
-                                                registeredAt: event.myRegistration?.registeredAt
+                                                registeredAt: event.myRegistration?.registeredAt,
+                                                paymentStatus: event.myRegistration?.paymentStatus,
+                                                responses: event.myRegistration?.responses || {}
                                             });
                                         }}
                                         className="ml-4 text-xs font-mono bg-gray-100 text-gray-700 px-3 py-1.5 rounded border hover:bg-gray-200 transition whitespace-nowrap">
@@ -149,11 +154,16 @@ const Dashboard = () => {
                     onClick={() => setTicket(null)}>
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
                         {/* Header */}
-                        <div className="bg-blue-600 text-white px-5 py-4 rounded-t-lg">
+                        <div className={`text-white px-5 py-4 rounded-t-lg ${ticket.type === 'merchandise' ? 'bg-gradient-to-r from-purple-600 to-pink-600' : 'bg-blue-600'}`}>
                             <p className="text-xs uppercase tracking-widest opacity-75 mb-0.5">
                                 {ticket.type === 'merchandise' ? 'Purchase Ticket' : 'Event Ticket'}
                             </p>
                             <h2 className="text-lg font-bold leading-tight">{ticket.eventName}</h2>
+                            {ticket.type === 'merchandise' && ticket.paymentStatus === 'Approved' && (
+                                <span className="inline-block mt-1 text-xs font-bold bg-white bg-opacity-20 px-2 py-0.5 rounded-full">
+                                    ✓ Purchase Approved
+                                </span>
+                            )}
                         </div>
 
                         {/* Body */}
@@ -172,8 +182,48 @@ const Dashboard = () => {
                                 <span className="text-gray-500">Location</span>
                                 <span className="font-medium">{ticket.location || 'TBA'}</span>
                             </div>
+                            {ticket.type === 'merchandise' && (
+                                <>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Price</span>
+                                        <span className="font-medium text-green-700">
+                                            {ticket.price === 0 ? 'Free' : `₹${ticket.price}`}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Status</span>
+                                        <span className={`font-semibold ${
+                                            ticket.paymentStatus === 'Approved' ? 'text-green-700' :
+                                            ticket.paymentStatus === 'Pending' ? 'text-yellow-700' :
+                                            'text-red-700'
+                                        }`}>{ticket.paymentStatus}</span>
+                                    </div>
+                                    {ticket.itemDetails && Object.keys(ticket.itemDetails).length > 0 && (
+                                        <div className="pt-1">
+                                            <p className="text-gray-500 mb-1 text-xs font-semibold uppercase tracking-wide">Available Variants</p>
+                                            {Object.entries(ticket.itemDetails).map(([k, v]) => (
+                                                <div key={k} className="flex justify-between text-xs text-gray-600">
+                                                    <span className="text-gray-500">{k}</span>
+                                                    <span className="font-medium">{Array.isArray(v) ? v.join(', ') : v}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {ticket.responses && Object.keys(ticket.responses).length > 0 && (
+                                        <div className="pt-1 border-t border-dashed border-gray-200">
+                                            <p className="text-gray-500 mb-1 text-xs font-semibold uppercase tracking-wide">Your Order</p>
+                                            {Object.entries(ticket.responses).map(([k, v]) => (
+                                                <div key={k} className="flex justify-between">
+                                                    <span className="text-gray-500">{k}</span>
+                                                    <span className="font-semibold text-purple-700">{v}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Registered</span>
+                                <span className="text-gray-500">{ticket.type === 'merchandise' ? 'Ordered On' : 'Registered'}</span>
                                 <span className="font-medium">{ticket.registeredAt ? new Date(ticket.registeredAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'N/A'}</span>
                             </div>
                         </div>
